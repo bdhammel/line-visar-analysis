@@ -1,0 +1,26 @@
+[
+  {
+    "thickness":1.0,
+    "material":"bk7"
+  },
+  {
+    "thickness":2.0,
+    "material":"bk7"
+  },
+  {
+    "thickness":5.0,
+    "material":"bk7"
+  },
+  {
+    "thickness":15.0,
+    "material":"bk7"
+  },
+  {
+    "thickness":25.0,
+    "material":"bk7"
+  },
+  {
+    "thickness":45.0,
+    "material":"bk7"
+  }
+]
