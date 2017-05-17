@@ -26,7 +26,7 @@ class Etalon:
         """Return velocity per fringe shift due to etalon 
         units of um/ns (or km/s) 
         """
-        return WAVELENGTH / ( 3. * self.tau * ( 1. + self._delta))
+        return WAVELENGTH / ( 2. * self.tau * ( 1. + self._delta))
 
     @property
     def tau(self) -> "ns":
