@@ -31,6 +31,7 @@ class Etalon:
     @property
     def tau(self) -> "ns":
         """Time delay of etalon
+        time delay of a double pass through the etalon
         """
         return 2. * self.thickness / c * (self._n - 1/self._n)
 

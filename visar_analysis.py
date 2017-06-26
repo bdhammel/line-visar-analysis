@@ -1,10 +1,37 @@
+import numpy as np
+from scipy.signal import savgol_filter  
+from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
 import os
 import json
 
-import matplotlib.pyplot as plt
-import numpy as np
-
 from etalons import json_to_etalon
+
+"""Line VISAR analysis script 
+
+__author__ = "Ben Hammel"
+__email__ = "bdhammel@gmail.com"
+__status__ = "Development"
+
+References
+-----------
+[1] P. M. Celliers, D. K. Bradley, G. W. Collins, D. G. Hicks, T. R. Boehly, 
+and W. J. Armstrong, "Line- imaging velocimeter for shock diagnostics at the 
+OMEGA laser facility," Review of Scientific Instruments, vol. 75, pp. 4916–4929, 
+nov 2004
+"""
+
+ANALYSIS_PARAMS = {
+        "file":None,
+        "streak_dims":(),
+        "data_selection":(),
+        "ref_fringe_selection":(),
+        "freq_selection":(),
+        "etalon":None,
+        "background_file":None,
+        "lineout_selection":()
+        }
+
 
 class StreakCamera:
     def __init__(self, sweep_window, slit_width, slit_opening=None):
@@ -72,7 +99,7 @@ class ImageData:
 
     @property
     def aspect(self):
-        """Aspect ration of the image
+        """Aspect ratio of the image
         Ration of x pixels / y pixels 
 
         Returns
@@ -99,16 +126,19 @@ class ImageData:
 
         if frame:
             ax.set_xlabel("Time [ns]")
-            ax.set_ylabel("X [mm]")
+            ax.set_ylabel("X [um]")
             extent = (self.x.min(), self.x.max(), self.y.min(), self.y.max())
         else:
             ax.set_axis_off()
             extent = None
 
         implot = ax.imshow(self._data, aspect='auto', extent=extent, origin="lower")
+        fig.colorbar(implot)
         implot.set_cmap(color)
 
         plt.show()
+
+        return implot.axes
 
 class SpectrogramData(ImageData):
     """Extension of ImageData, specific to displaying a spectrogram 
@@ -167,9 +197,11 @@ class SpectrogramData(ImageData):
 
         implot = ax.imshow(self.pdata, aspect='auto', extent=extent, origin="lower")
         implot.set_cmap(color)
-        plt.ylim(-100,100)
+        plt.ylim(-0.1, 0.1)
 
         plt.draw()
+
+        return implot.axes
 
 
 class IndexSelector:
@@ -317,8 +349,12 @@ class DataSelector2D:
     height (int): height of rectangle
     """
 
-    def __init__(self, img, color='r'):
-        self._ax = plt.gca()
+    def __init__(self, img, ax=None, color='r'):
+        if not ax:
+            self._ax = plt.gca()
+        else:
+            self._ax = ax
+
         self._draw = False
         self._rec = plt.Rectangle((0,0),0,0)
         self._color = color
@@ -464,8 +500,9 @@ class LockedSelector(DataSelector2D):
          only draw a rectangle of width (or height) ____
     """
 
-    def __init__(self, img, lock_start=None, lock_width=None, lock_height=None):
-        super().__init__(img, 'g')
+    def __init__(self, img, lock_start=None, lock_width=None, lock_height=None,
+            **kwargs):
+        super().__init__(img, color='g', **kwargs)
 
         self.lock_start = lock_start
         self.lock_width = lock_width
@@ -642,7 +679,7 @@ def show_averaged_fft(ref_spec):
     avg_ref_spec = np.average(ref_spec.pdata, axis=1)
     l, = plt.plot(ref_spec.pwavenum, avg_ref_spec, picker=5)
     plt.xlabel("k")
-    plt.xlim(0,200)
+    plt.xlim(0, 0.2)
     plt.draw()
     plt.tight_layout()
     return l
@@ -753,6 +790,24 @@ def vpf_from_etalon(etalons):
 
     return vpf
 
+def vpf_thru_window(vpf):
+    """Correct the VPF to a window'd target
+
+    """
+    windows = [
+            {"material":"None", "correction":0},
+            {"material":"LiF", "correction":0},
+            ]
+    print("Window material? \n")
+    for i, window in enumerate(windows):
+        print("\t[{}]{material:_>20}".format(
+            i, material=window["material"]))
+    print("\t[{}]{:_>20}".format(i+1, "custom"))
+
+    choice = int(input("> "))
+    vpf = vpf/(1+windows[choice]["correction"])
+
+    return vpf
 
 def get_velocity_map(img, ref, vpf):
     """Construct velocity map from phase map using VPF
@@ -760,27 +815,20 @@ def get_velocity_map(img, ref, vpf):
     Velocity is multiplied by -1 to be consistent with plotted images - images
     are flipped, as the origin is set to be at the bottom left during plotting
 
+    TODO:
+    Do not set diff to 0, set it to interpolate between the previous and future
+    values...
+
     Args
     ----
     img (ImageData) : 
     ref ()
     vpf (float) : velocity per fringe shift - dependent on the etalon chosen 
 
-    Attributes
-    ----------
-    _threshold = +/- pi/2 to account for noise
-    _max_dphase = min possible shift in phase to be considered a jump
-    _min_dphase
-
     Returns
     -------
     """
-
     avg_to = len(ref.x)
-
-    _threshold = .07
-    _max_dphase = np.pi/2. - _threshold
-    _min_dphase = -1 * _max_dphase
 
     wrapped_phase = np.copy(img.data)
 
@@ -789,22 +837,26 @@ def get_velocity_map(img, ref, vpf):
     rel_phase = wrapped_phase \
                 - np.mean(wrapped_phase[...,:avg_to], axis=1, keepdims=True)
 
-    # correct for discontinuities through pi rotations
-    for row in rel_phase:
-        for j in range(1, len(row)):
-            diff = row[j] - row[j-1]
-            if diff > np.pi/2:
-                row[j:] -= np.pi
-            elif diff < -np.pi/2:
-                row[j:] += np.pi
+    dif = np.diff(rel_phase, axis=1)
+    dif[np.where(dif > 1.5)] -= np.pi
+    dif[np.where(dif < -1.5)] += np.pi
+
+    unwrapped_phase = np.cumsum(dif, axis=1)
 
     # Generate velocity image based on VPF
-    velocity_img = ImageData(rel_phase*vpf/(2*np.pi))
+    velocity_img = ImageData(unwrapped_phase*vpf/(2*np.pi))
     velocity_img.copy_dimensions(img)
 
     return velocity_img
 
-def get_velocity(velocity_map, lineout_height=.01):
+def smooth(velocity_map):
+    """Smooth the image in the spatial direction
+    """
+    a = savgol_filter(velocity_map.data, window_length=201, polyorder=2, axis=0)
+    velocity_map._data = a
+    return velocity_map
+
+def get_velocity(velocity_map, ax, lineout_height=5.):
     """Take a lineout of the velocity map 
 
     let the user select a section of the velocity map.
@@ -817,7 +869,7 @@ def get_velocity(velocity_map, lineout_height=.01):
     lineout_height (negative int): height of lineout used
         to select average of velocity.     
     """
-    lineout_selector = LockedSelector(velocity_map, lock_height=lineout_height)
+    lineout_selector = LockedSelector(velocity_map, ax=ax, lock_height=lineout_height)
 
     print("\nSelect a line out. width: {}".format(lineout_height))
     wait_for_input(lineout_selector)
@@ -887,6 +939,18 @@ def add_fringe_shift(time, velocity, vpf):
 
     return time, velocity
 
+def subtract_background():
+    print("\nLoad background streak image")
+    path = prompt_for_path()
+    ANALYSIS_PARAMS["background_file"] = path
+    raw_background = load_image(path, *ANALYSIS_PARAMS["streak_dims"])
+    cropped_data = None
+    spec = SpectrogramData()
+    spec.apply_fft(cropped_data)
+    ref_data = None
+    ref_spec = SpectrogramData()
+    ref_spec.apply_fft(ref_data)
+
 if __name__ == "__main__":
     plt.ion()
     plt.close('all')
@@ -902,7 +966,9 @@ if __name__ == "__main__":
     # Load the raw data
     print("\nLoad png Streak image")
     path = prompt_for_path()
-    raw_data = load_image(path, xmin=0, xmax=500, ymin=-.5, ymax=.5)
+    ANALYSIS_PARAMS["file"] = path
+
+    raw_data = load_image(path, xmin=12.7, xmax=23, ymin=-500, ymax=500)
 
     # crop out the data the user wants to work with 
     print("Select Working data from raw image.")
@@ -934,13 +1000,17 @@ if __name__ == "__main__":
 
     # get the etalon used from the user
     vpf = vpf_from_etalon(etalons)
+    vpf = vpf_thru_window(vpf)
 
     # follow each spacial component to generate a velocity map.
     raw_velocity_map = get_velocity_map(phase, ref_data, vpf)
-    raw_velocity_map.show(title = "Velocity Map", color='jet')
+
+    #raw_velocity_map = smooth(raw_velocity_map)
+    raw_velocity_plot = raw_velocity_map.show(
+            title = "Velocity Map", color='jet', colorbar=True)
 
     # Get velocity trace
-    time, velocity = get_velocity(raw_velocity_map)
+    time, velocity = get_velocity(raw_velocity_map, ax=raw_velocity_plot)
     plot_velocity(time, velocity, picker=True)
 
     print("Invert?")
@@ -959,5 +1029,3 @@ if __name__ == "__main__":
             time, velocity = add_fringe_shift(time, velocity, vpf)
         else:
             break
-
-
