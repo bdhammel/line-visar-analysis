@@ -26,5 +26,13 @@
   {
     "thickness":45.0,
     "material":"bk7"
+  },
+  {
+    "thickness":9.97,
+    "material":"fused_silica"
+  },
+  {
+    "thickness":25.3,
+    "material":"fused_silica"
   }
 ]

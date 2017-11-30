@@ -143,9 +143,10 @@ if __name__ == "__main__":
         etalons = json.load(f, object_hook=json_to_etalon)
 
     for etalon in etalons:
-        print("{thickness:_<20} {vpf:_<20} {offset}\n\n".format(
+        print("{thickness:_<20} {vpf:_<20} {tau:_<20} {offset}\n\n".format(
             thickness="{:.4} mm".format(etalon.thickness*1e-3),
             vpf="{:.4} km/s".format(etalon.vpf),
+            tau="{:.4} ns".format(etalon.tau),
             offset="{:.4} mm".format(etalon.find_offset())
             ))
 
