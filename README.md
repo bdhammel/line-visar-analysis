@@ -19,7 +19,7 @@ path > /<Path>/smith.png
 
 This will open up the PNG image in a matplotlib figure. The figure has event handeling enabled, and you will be propted to `Select Working data from raw image` by drawing a rectangle (red) on the figure by clicking and dragging. You must drag from the bottom-left to top-right.
 
-![](/Users/bdhammel/Documents/research_programing/visar_scripts/media/raw_data.png)
+![](./media/raw_data.png)
 
 Press <kb>enter</kb> in the terminal to select the region of data. You will then be propted to select a region of reference fringes, drag away from the start of the rectangle (green). Press <kb>enter</kb> in the terminal to confirm selection.
 
@@ -27,7 +27,7 @@ Press <kb>enter</kb> in the terminal to select the region of data. You will then
 
 A new window will open for you to select the fringe-spacing frequency of interest. Click on a location of the plot to select the minimum frequency (green), press enter (at the window focus, not the terminal), and select the maximum frequency (red). Press enter in the terminal to end selections.
 
-![](/Users/bdhammel/Documents/research_programing/visar_scripts/media/freq.png)
+![](./media/freq.png)
 
 ### Pick Etalon
 
@@ -58,7 +58,7 @@ Enter "yes" in the terminal to subtract background fringes. You will be prompted
 
 Using the click-and-drag technique, select a rectangle of interest (green) from the veloctiy map.
 
-![](/Users/bdhammel/Documents/research_programing/visar_scripts/media/vmap.png)
+![](./media/vmap.png)
 
 `analyse()` will now return time and velocity arrays from your selection, along with a dictionary of the parameters you selected during the analysis
 
