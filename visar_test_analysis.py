@@ -1,6 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from visar_analysis import automated_anaysis, load_parameters
+
+visar_dir = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "simulated_visar/"
+        )
+print(visar_dir)
+
+if visar_dir not in sys.path:
+    sys.path.append(visar_dir)
+
 from simulate_data import *
 import visar_core_analysis as core
 
@@ -24,16 +34,17 @@ Things to vary:
 """
 
 if __name__ == "__main__":
-    #velocity_equation = lambda t, y : spatial_var_step(3, t, y, max_velocity=3)
-    velocity_equation = lambda t, y : sin_step(20, .5, t, y, max_velocity=1)
+
+    velocity_equation = lambda t, y : spatial_var_step(3, t, y, max_velocity=3)
+    #velocity_equation = lambda t, y : sin_step(20, .5, t, y, max_velocity=1)
 
     plt.close('all')
 
-
-
     EPOCHS = range(1)
+
     avg = []
     std = []
+
     for epoch in EPOCHS:
         print("\nEpoch: ", epoch)
         print("...Initializing")
