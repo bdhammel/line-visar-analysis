@@ -1,3 +1,8 @@
+
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2578671.svg)](https://doi.org/10.5281/zenodo.2578671)
+
+
 # VISAR Scripts
 
 For a discussion of the theory, please visit [my blog post](https://bdhammel.github.io/2017/06/10/line-visar-analysis.html)
@@ -87,3 +92,17 @@ To recall an old analysis session, run the automation method with the pickle ana
 ~~~python
 automated_analysis(params="name/of/file.npy")
 ~~~
+
+## Cite this work
+```
+@misc{https://doi.org/10.5281/zenodo.2578671,
+  doi = {10.5281/zenodo.2578671},
+  url = {https://zenodo.org/record/2578671},
+  author = {Hammel,  Ben},
+  title = {bdhammel/line-visar-analysis: Initial release},
+  publisher = {Zenodo},
+  year = {2019}
+}
+```
+
+B. Hammel. bdhammel/line-visar-analysis: Initial release, 2019.
