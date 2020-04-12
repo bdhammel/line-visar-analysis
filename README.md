@@ -5,7 +5,7 @@
 
 # VISAR Scripts
 
-For a discussion of the theory, please visit [my blog post](https://bdhammel.github.io/2017/06/10/line-visar-analysis.html)
+For a discussion of the theory, please visit [my blog post](http://www.bdhammel.com/line-visar-analysis/)
 
 ## Analysis
 
