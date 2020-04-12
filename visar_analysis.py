@@ -1,9 +1,10 @@
-import matplotlib.pyplot as plt
-import visar_core_analysis as core
 import os
 import pickle
 import json
 
+import matplotlib.pyplot as plt
+
+import visar_core_analysis as core
 from etalons import json_to_etalon
 
 

@@ -1047,7 +1047,7 @@ def add_fringe_shift(time, velocity, vpf):
     return time, velocity
 
 
-def subtract_background():
+def subtract_background(ANALYSIS_PARAMS):
     print("\nLoad background streak image")
     path = prompt_for_path()
     ANALYSIS_PARAMS["background_file"] = path
